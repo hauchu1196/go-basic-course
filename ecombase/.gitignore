@@ -1,0 +1,10 @@
+# Ignore the config.yaml file
+config.yaml
+
+# Other common ignores
+*.log
+*.tmp
+*.out
+*.exe
+*.db
+vendor/
