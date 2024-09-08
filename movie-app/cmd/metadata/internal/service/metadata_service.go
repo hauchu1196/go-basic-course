@@ -1,7 +1,7 @@
 package service
 
 import (
-	"movie-app/cmd/metadata/internal/models"
+	"movie-app/cmd/metadata/pkg"
 	"movie-app/cmd/metadata/internal/repository"
 )
 
@@ -13,8 +13,8 @@ func NewMetadataService(repo repository.MetadataRepository) MetadataService {
 	return MetadataService{repo: repo}
 }
 
-func (s MetadataService) GetMetadata(id string) (models.Metadata, error) {
-	return s.repo.GetMetadata(id)
+func (s MetadataService) GetMetadata(movieId string) (models.Metadata, error) {
+	return s.repo.GetMetadata(movieId)
 }
 
 func (s MetadataService) CreateMetadata(metadata models.Metadata) (models.Metadata, error) {

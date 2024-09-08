@@ -1,10 +1,10 @@
 package repository
 
-import "movie-app/cmd/metadata/internal/models"
+import "movie-app/cmd/metadata/pkg"
 
 type MetadataRepository interface {
-	GetMetadata(id string) (models.Metadata, error)
+	GetMetadata(movieId string) (models.Metadata, error)
 	CreateMetadata(metadata models.Metadata) (models.Metadata, error)
 	UpdateMetadata(metadata models.Metadata) (models.Metadata, error)
-	DeleteMetadata(id string) error
+	DeleteMetadata(movieId string) error
 }

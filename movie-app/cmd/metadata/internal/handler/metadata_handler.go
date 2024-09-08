@@ -1,14 +1,17 @@
 package handler
 
 import (
-	"movie-app/cmd/metadata/internal/models"
+	"context"
 	"movie-app/cmd/metadata/internal/service"
+	models "movie-app/cmd/metadata/pkg"
+	"movie-app/gen"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type MetadataHandler struct {
+	gen.UnimplementedMetadataServiceServer
 	service service.MetadataService
 }
 
@@ -16,14 +19,12 @@ func NewMetadataHandler(service service.MetadataService) MetadataHandler {
 	return MetadataHandler{service: service}
 }
 
-func (h MetadataHandler) GetMetadata(c *gin.Context) {
-	id := c.Param("id")
-	metadata, err := h.service.GetMetadata(id)
+func (h MetadataHandler) GetMetadata(ctx context.Context, req *gen.GetMetadataRequest) (*gen.GetMetadataResponse, error) {
+	metadata, err := h.service.GetMetadata(req.MovieID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, metadata)
+	return &gen.GetMetadataResponse{Metadata: metadata}, nil
 }
 
 func (h MetadataHandler) CreateMetadata(c *gin.Context) {
@@ -55,8 +56,8 @@ func (h MetadataHandler) UpdateMetadata(c *gin.Context) {
 }
 
 func (h MetadataHandler) DeleteMetadata(c *gin.Context) {
-	id := c.Param("id")
-	if err := h.service.DeleteMetadata(id); err != nil {
+	movieId := c.Param("movieId")
+	if err := h.service.DeleteMetadata(movieId); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

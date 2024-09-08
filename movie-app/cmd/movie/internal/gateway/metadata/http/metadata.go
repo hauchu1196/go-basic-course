@@ -1,23 +1,32 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	models "movie-app/cmd/metadata/pkg"
+	"movie-app/pkg/discovery"
 	"net/http"
+
+	"golang.org/x/exp/rand"
 )
 
 type Gateway struct {
-	addr string
+	registry discovery.Registry
 }
 
-func New(addr string) *Gateway {
-	return &Gateway{addr: addr}
+func New(registry discovery.Registry) *Gateway {
+	return &Gateway{registry: registry}
 }
 
 func (m *Gateway) Get(ctx context.Context, id string) (*models.Metadata, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/%s", m.addr, id), nil)
+	addresses, err := m.registry.ServiceAddresses(ctx, "metadata")
+	if err != nil {
+		return nil, err
+	}
+	url := "http://" + addresses[rand.Intn(len(addresses))] + "/metadata"
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/%s", url, id), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -40,4 +49,30 @@ func (m *Gateway) Get(ctx context.Context, id string) (*models.Metadata, error) 
 	}
 
 	return &metadata, nil
+}
+
+func (m *Gateway) Create(ctx context.Context, metadata *models.Metadata) error {
+	body, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+
+	addresses, err := m.registry.ServiceAddresses(ctx, "metadata")
+	if err != nil {
+		return err
+	}
+	url := "http://" + addresses[rand.Intn(len(addresses))] + "/metadata"
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s", url), bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	return nil
 }

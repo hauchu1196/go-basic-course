@@ -19,11 +19,11 @@ func NewMetadataMemoryRepository() MetadataRepository {
 	}
 }
 
-func (m *MetadataMemoryRepository) GetMetadata(id string) (models.Metadata, error) {
+func (m *MetadataMemoryRepository) GetMetadata(movieId string) (models.Metadata, error) {
 	m.RLock()
 	defer m.RUnlock()
 
-	metadata, ok := m.data[id]
+	metadata, ok := m.data[movieId]
 	if !ok {
 		return models.Metadata{}, errors.New("metadata not found")
 	}
@@ -36,7 +36,7 @@ func (m *MetadataMemoryRepository) CreateMetadata(metadata models.Metadata) (mod
 	defer m.Unlock()
 
 	metadata.ID = uuid.New().String()
-	m.data[metadata.ID] = &metadata
+	m.data[metadata.MovieID] = &metadata
 
 	return metadata, nil
 }
@@ -45,16 +45,16 @@ func (m *MetadataMemoryRepository) UpdateMetadata(metadata models.Metadata) (mod
 	m.Lock()
 	metadata.ID = uuid.New().String()
 
-	m.data[metadata.ID] = &metadata
+	m.data[metadata.MovieID] = &metadata
 
 	return metadata, nil
 }
 
-func (m *MetadataMemoryRepository) DeleteMetadata(id string) error {
+func (m *MetadataMemoryRepository) DeleteMetadata(movieId string) error {
 	m.Lock()
 	defer m.Unlock()
 
-	delete(m.data, id)
+	delete(m.data, movieId)
 
 	return nil
 }

@@ -7,18 +7,26 @@ import (
 	"net/http"
 
 	models "movie-app/cmd/rating/pkg"
+	"movie-app/pkg/discovery"
+
+	"golang.org/x/exp/rand"
 )
 
 type Gateway struct {
-	addr string
+	registry discovery.Registry
 }
 
-func New(addr string) *Gateway {
-	return &Gateway{addr: addr}
+func New(registry discovery.Registry) *Gateway {
+	return &Gateway{registry: registry}
 }
 
 func (g *Gateway) Get(ctx context.Context, movieId string) (float64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/ratings/%s", g.addr, movieId), nil)
+	addresses, err := g.registry.ServiceAddresses(ctx, "rating")
+	if err != nil {
+		return 0, err
+	}
+	url := "http://" + addresses[rand.Intn(len(addresses))] + "/ratings"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", url, movieId), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -44,7 +52,13 @@ func (g *Gateway) Get(ctx context.Context, movieId string) (float64, error) {
 }
 
 func (g *Gateway) Create(ctx context.Context, rating *models.Rating) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/ratings", g.addr), nil)
+	addresses, err := g.registry.ServiceAddresses(ctx, "rating")
+	if err != nil {
+		return err
+	}
+
+	url := "http://" + addresses[rand.Intn(len(addresses))] + "/ratings"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s", url), nil)
 	if err != nil {
 		return err
 	}

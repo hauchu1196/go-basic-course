@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"movie-app/cmd/rating/internal/models"
+	"movie-app/cmd/rating/pkg"
 	"movie-app/cmd/rating/internal/service"
 	"net/http"
 
