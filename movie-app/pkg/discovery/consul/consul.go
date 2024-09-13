@@ -4,26 +4,31 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"movie-app/pkg/discovery"
 	"strconv"
 	"strings"
 
 	consul "github.com/hashicorp/consul/api"
+	"movieexample.com/pkg/discovery"
 )
 
+// Registry defines a Consul-based service regisry.
 type Registry struct {
 	client *consul.Client
 }
 
+// NewRegistry creates a new Consul-based service registry instance.
 func NewRegistry(addr string) (*Registry, error) {
-	client, err := consul.NewClient(&consul.Config{Address: addr})
+	config := consul.DefaultConfig()
+	config.Address = addr
+	client, err := consul.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 	return &Registry{client: client}, nil
 }
 
-func (r *Registry) Register(ctx context.Context, serviceID string, serviceName string, hostPort string) error {
+// Register creates a service record in the registry.
+func (r *Registry) Register(ctx context.Context, instanceID string, serviceName string, hostPort string) error {
 	parts := strings.Split(hostPort, ":")
 	if len(parts) != 2 {
 		return errors.New("hostPort must be in a form of <host>:<port>, example: localhost:8081")
@@ -32,23 +37,21 @@ func (r *Registry) Register(ctx context.Context, serviceID string, serviceName s
 	if err != nil {
 		return err
 	}
-	registration := &consul.AgentServiceRegistration{
-		ID:      serviceID,
-		Name:    serviceName,
+	return r.client.Agent().ServiceRegister(&consul.AgentServiceRegistration{
 		Address: parts[0],
+		ID:      instanceID,
+		Name:    serviceName,
 		Port:    port,
-		Check: &consul.AgentServiceCheck{
-			CheckID: serviceID,
-			TTL:     "5s",
-		},
-	}
-	return r.client.Agent().ServiceRegister(registration)
+		Check:   &consul.AgentServiceCheck{CheckID: instanceID, TTL: "5s"},
+	})
 }
 
-func (r *Registry) Deregister(ctx context.Context, serviceID string, _ string) error {
-	return r.client.Agent().ServiceDeregister(serviceID)
+// Deregister removes a service record from the registry.
+func (r *Registry) Deregister(ctx context.Context, instanceID string, _ string) error {
+	return r.client.Agent().ServiceDeregister(instanceID)
 }
 
+// ServiceAddresses returns the list of addresses of active instances of the given service.
 func (r *Registry) ServiceAddresses(ctx context.Context, serviceName string) ([]string, error) {
 	entries, _, err := r.client.Health().Service(serviceName, "", true, nil)
 	if err != nil {
@@ -56,14 +59,14 @@ func (r *Registry) ServiceAddresses(ctx context.Context, serviceName string) ([]
 	} else if len(entries) == 0 {
 		return nil, discovery.ErrNotFound
 	}
-
-	var addresses []string
-	for _, entry := range entries {
-		addresses = append(addresses, fmt.Sprintf("%s:%d", entry.Service.Address, entry.Service.Port))
+	var res []string
+	for _, e := range entries {
+		res = append(res, fmt.Sprintf("%s:%d", e.Service.Address, e.Service.Port))
 	}
-	return addresses, nil
+	return res, nil
 }
 
-func (r *Registry) ReportHealthyState(instance string, serviceName string) error {
-	return r.client.Agent().PassTTL(instance, "")
+// ReportHealthyState is a push mechanism for reporting healthy state to the registry.
+func (r *Registry) ReportHealthyState(instanceID string, _ string) error {
+	return r.client.Agent().PassTTL(instanceID, "")
 }

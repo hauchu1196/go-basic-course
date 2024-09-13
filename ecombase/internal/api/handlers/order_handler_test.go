@@ -146,3 +146,23 @@ func TestListOrders(t *testing.T) {
 
     mockService.AssertExpectations(t)
 }
+
+// subtests
+
+func TestCreateOrder_InvalidInput(t *testing.T) {
+    t.Run("empty customer name", func(t *testing.T) {
+        t.Skip("skipping test")
+    })
+
+    t.Run("negative total amount", func(t *testing.T) {
+        t.Parallel()
+        mockService := new(mocks.MockOrderService)
+        handler := NewOrderHandler(mockService)
+
+        order := &models.Order{
+            CustomerName: "John Doe",
+            TotalAmount:  -100.0,
+            Status:       "pending",
+        }
+    })
+}
